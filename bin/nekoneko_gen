@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+if (RUBY_VERSION < "1.9.0")
+  require 'rubygems'
+  $KCODE= 'u'
+end
+require 'nekoneko_gen'
+
+exit(NekonekoGen.run(ARGV))
