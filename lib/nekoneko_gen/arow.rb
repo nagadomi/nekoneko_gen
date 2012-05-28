@@ -1,7 +1,6 @@
 module NekonekoGen
   class Arow
-    R = 10.0
-    
+    R = 6.0
     attr_accessor :k, :w
     def initialize(k, options = {})
       @r = options[:r] || R
@@ -23,6 +22,10 @@ module NekonekoGen
       if (@k == 2)
         loss = update_at(0, vec, label)
       else
+        nega = rand(@k - 1)
+        if (nega == label)
+          nega += 1
+        end
         s = 1.0 / @k
         @k.times do |i|
           loss += update_at(i, vec, label) * s
