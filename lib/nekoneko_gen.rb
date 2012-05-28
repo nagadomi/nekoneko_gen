@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'nekoneko_gen/version'
 require 'nekoneko_gen/text_classifier_generator'
 require 'optparse'

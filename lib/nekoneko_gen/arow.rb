@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 module NekonekoGen
   class Arow
     R = 6.0

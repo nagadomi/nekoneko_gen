@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 require 'json'
+require 'nkf'
 require 'bimyou_segmenter'
+
 require File.expand_path(File.join(File.dirname(__FILE__), 'arow'))
 
 module NekonekoGen
@@ -26,12 +28,16 @@ module NekonekoGen
         t = Time.now
         data[i] = []
         print "loading #{@files[i]}... "
+        
+        content = nil
         File.open(@files[i]) do |f|
-          until (f.eof?)
-            vec = fv(f.readline.chomp)
-            if (vec.size > 0)
-              data[i] << normalize(vec)
-            end
+          content = f.read
+        end
+        content = NKF.nkf('-w', content)
+        content.lines do |line|
+          vec = fv(line.chomp)
+          if (vec.size > 0)
+            data[i] << normalize(vec)
           end
         end
         puts sprintf("%.4fs", Time.now - t)
