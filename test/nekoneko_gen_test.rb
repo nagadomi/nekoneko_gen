@@ -14,11 +14,11 @@ class NekonekoGenTest < Test::Unit::TestCase
   end
   def cleanup!
     begin
-      #File.unlink(@output_file2)
+      File.unlink(@output_file2)
     rescue
     end
     begin
-      #File.unlink(@output_file3)
+      File.unlink(@output_file3)
     rescue
     end
   end
