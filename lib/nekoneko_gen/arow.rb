@@ -23,10 +23,6 @@ module NekonekoGen
       if (@k == 2)
         loss = update_at(0, vec, label)
       else
-        nega = rand(@k - 1)
-        if (nega == label)
-          nega += 1
-        end
         s = 1.0 / @k
         @k.times do |i|
           loss += update_at(i, vec, label) * s
