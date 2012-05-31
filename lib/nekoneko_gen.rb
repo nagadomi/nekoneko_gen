@@ -23,7 +23,7 @@ module NekonekoGen
       o.on('-i N', "iteration (default: #{DEFAULT_ITERATION})") do |v|
         iteration = v.to_i.abs
       end
-      o.on('-m METHOD', "training method (AROW|PA1|PA2)") do |v|
+      o.on('-m METHOD', "machine learning method (AROW|PA1|PA2)") do |v|
         case v.downcase
         when 'arow'
           method = :arow
@@ -33,7 +33,7 @@ module NekonekoGen
           method = :pa2
         end
       end
-      o.on('-p VAL', "parameter") do |v|
+      o.on('-p C', "parameter") do |v|
         c = v.to_f
       end
       o.on('-q', "quiet") do
