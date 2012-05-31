@@ -1,5 +1,9 @@
+require 'json'
+require File.expand_path(File.join(File.dirname(__FILE__), 'classifier'))
+
 module NekonekoGen
-  class LinearClassifier
+  class LinearClassifier < Classifier
+    attr_accessor :w, :k, :bias
     def dot(vec, w)
       dot = 0.0
       vec.each do |k, v|
@@ -33,6 +37,49 @@ module NekonekoGen
         end
       end
       loss
+    end
+    def features(i = -1)
+      if (i < 0)
+        w.reduce(0){|sum, v| sum + v.size }
+      else
+        w[i].size
+      end
+    end
+    def parameter_code(lang, index_converter = lambda{|i| i})
+      lang ||= :ruby
+      case lang
+      when :ruby
+      else
+        raise NotImplementedError
+      end
+      
+      wvec = self.strip!.map {|w|
+        w.reduce({}) {|h, kv| h[index_converter.call(kv[0])] = kv[1]; h }
+      }
+      <<CODE
+  BIAS = #{self.bias.inspect}
+  W = JSON.load(#{wvec.to_json.inspect})
+CODE
+    end
+    def classify_method_code(lang)
+      lang ||= :ruby
+      case lang
+      when :ruby
+      else
+        raise NotImplementedError
+      end
+      
+      <<CODE
+  def self.classify(vec)
+    if (K == 2)
+      BIAS[0] + W[0].values_at(*vec).compact.reduce(0.0, :+) > 0.0 ? 0 : 1
+    else
+      W.each_with_index.map {|w, i|
+        [BIAS[i] + w.values_at(*vec).compact.reduce(0.0, :+), i]
+      }.max.pop
+    end
+  end
+CODE
     end
   end
 end

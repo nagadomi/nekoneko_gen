@@ -1,23 +1,12 @@
 # -*- coding: utf-8 -*-
-require 'json'
 require 'nkf'
 require 'bimyou_segmenter'
 
-require File.expand_path(File.join(File.dirname(__FILE__), 'arow'))
-require File.expand_path(File.join(File.dirname(__FILE__), 'pa'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'classifier_factory'))
 
 module NekonekoGen
   class TextClassifierGenerator
     attr_accessor :quiet
-    def linear_classifier_create(options)
-      method = options[:method] || :arow
-      case (method)
-      when :arow
-        Arow.new(options[:k], options)
-      when :pa, :pa1, :pa2
-        PA.new(options[:k], options)
-      end
-    end
     def initialize(filename, files, options = {})
       @quiet = false
       @options = options
@@ -25,7 +14,7 @@ module NekonekoGen
       @files = files
       @word2id = {}
       @id2word = {}
-      @lc = linear_classifier_create(options.merge({:k => files.size}))
+      @classifier = ClassifierFactory.create(files.size, options)
       @name = safe_name(@filename).split("_").map(&:capitalize).join
       @labels = files.map {|file| "#{safe_name(file).upcase}"}
     end
@@ -33,7 +22,7 @@ module NekonekoGen
     def train(iteration = 20)
       iteration ||= 20
       data = []
-      @lc.k.times do |i|
+      @classifier.k.times do |i|
         t = Time.now
         data[i] = []
         print "loading #{@files[i]}... "
@@ -58,31 +47,34 @@ module NekonekoGen
         t = Time.now
         print sprintf("step %3d...", step)
         
-        @lc.k.times.map do |i|
+        @classifier.k.times.map do |i|
           sampling(data[i], samples).map {|vec| [vec, i] }
         end.flatten(1).shuffle!.each do |v|
-          loss += @lc.update(v[0], v[1])
+          loss += @classifier.update(v[0], v[1])
           c += 1
         end
         print sprintf(" %.6f, %.4fs\n", 1.0 - loss / c.to_f, Time.now - t)
       end
-      @lc.strip!
-      
-      if (@lc.k > 2)      
-        @lc.w.each_with_index do |w, i|
-          puts "#{@labels[i]} : #{w.size} features"
+      if (@classifier.k > 2)
+        @classifier.w.each_with_index do |w, i|
+          puts "#{@labels[i]} : #{@classifier.features(i)} features"
         end
       else
-        puts "#{@labels[0]}, #{@labels[1]} : #{@lc.w[0].size} features"
+        puts "#{@labels[0]}, #{@labels[1]} : #{@classifier.features(0)} features"
       end
       puts "done nyan! "
     end
-    def generate
-      wv = @lc.w.map {|w|
-        w.reduce({}) {|h, kv| h[id2word(kv[0])] = kv[1]; h }
-      }
+    def generate(lang = :ruby)
+      lang ||= :ruby
+      case lang
+      when :ruby
+        generate_ruby_code
+      else
+        raise NotImplementedError
+      end
+    end
+    def generate_ruby_code
       labels = @labels.each_with_index.map{|v, i| "  #{v} = #{i}"}.join("\n")
-      
       File.open(@filename, "w") do |f|
         f.write <<MODEL
 # -*- coding: utf-8 -*-
@@ -91,9 +83,15 @@ require 'json'
 require 'bimyou_segmenter'
 
 class #{@name}
+  def self.k
+    K
+  end
   def self.predict(text)
+    classify(fv(text))
+  end
+  def self.fv(text)
     prev = nil
-    vec = BimyouSegmenter.segment(text).map do |word|
+    BimyouSegmenter.segment(text).map do |word|
       if (prev)
         if (NGRAM_TARGET =~ word)
           nword = [prev + word, word]
@@ -110,27 +108,18 @@ class #{@name}
         word
       end
     end.flatten(1)
-    if (W.size == 1)
-      BIAS[0] + W[0].values_at(*vec).compact.reduce(0.0, :+) > 0.0 ? 0 : 1
-    else
-      W.each_with_index.map {|w,i|
-        [BIAS[i] + w.values_at(*vec).compact.reduce(0.0, :+), i]
-      }.max.pop
-    end
   end
-  def self.k
-    W.size == 1 ? 2 : W.size
-  end
+#{@classifier.classify_method_code(:ruby)}
+  
 #{labels}
   LABELS = #{@labels.inspect}
-  
+  K = #{@classifier.k}
   private
   NGRAM_TARGET = Regexp.new('(^[ァ-ヾ]+$)|(^[a-zA-Z\\-_ａ-ｚＡ-Ｚ‐＿0-9０-９]+$)|' +
                          '(^[々〇ヵヶ' + [0x3400].pack('U') + '-' + [0x9FFF].pack('U') +
                          [0xF900].pack('U') + '-' + [0xFAFF].pack('U') +
                             [0x20000].pack('U') + '-' + [0x2FFFF].pack('U') + ']+$)')
-  BIAS = #{@lc.bias.inspect}
-  W = JSON.load(#{wv.to_json.inspect})
+#{@classifier.parameter_code(:ruby, lambda{|id| id2word(id) })}
 end
 MODEL
       end

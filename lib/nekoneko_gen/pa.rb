@@ -5,7 +5,7 @@ module NekonekoGen
   class PA < LinearClassifier
     C = 1.0
     NORM = 2.0 # norm + BIAS
-    attr_accessor :k, :w, :bias
+    
     def initialize(k, options = {})
       @k = k
       @c = options[:c] || C
@@ -21,7 +21,7 @@ module NekonekoGen
         end
       end
       if options[:method]
-        @alpha = 
+        @tau = 
           case options[:method]
           when :pa
             lambda{|y, l| pa(y, l)}
@@ -33,7 +33,7 @@ module NekonekoGen
             lambda{|y, l| pa2(y, l)}          
           end
       else
-        @alpha = lambda{|y, l| pa2(y, l)}
+        @tau = lambda{|y, l| pa2(y, l)}
       end
     end
     def pa2(y, l)
@@ -51,7 +51,7 @@ module NekonekoGen
       score = @bias[i] + dot(vec, w)
       l = 1.0 - score * y
       if (l > 0.0)
-        alpha = @alpha.call(y, l)
+        alpha = @tau.call(y, l)
         vec.each do |k, v|
           w[k] += alpha * v
         end

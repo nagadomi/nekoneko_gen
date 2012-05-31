@@ -3,7 +3,6 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'linear_classifier'))
 module NekonekoGen
   class Arow < LinearClassifier
     R = 6.0
-    attr_accessor :k, :w, :bias
     def initialize(k, options = {})
       @r = options[:c] || R
       @k = k
@@ -28,19 +27,21 @@ module NekonekoGen
     def update_at(i, vec, label)
       w = @w[i]
       cov = @cov[i]
+      covb = @covb[i]
+      bias = @bias[i]
       y = label == i ? 1 : -1
-      score = @bias[i] + dot(vec, w)
+      score = bias + dot(vec, w)
       alpha = 1.0 - y * score
       if (alpha > 0.0)
         r_inv= 1.0 / @r
-        var = vec.map {|k, v| cov[k] * v * v }.reduce(:+) + @covb[i]
+        var = vec.map{|k, v| cov[k] * v * v }.reduce(:+) + covb
         alpha *= (1.0 / (var + @r)) * y
         vec.each do |k, v|
           w[k] += alpha * cov[k] * v
           cov[k] = 1.0 / ((1.0 / cov[k]) + (v * v * r_inv))
         end
-        @bias[i] += alpha * @covb[i]
-        @covb[i] = 1.0 / ((1.0 / @covb[i]) + r_inv)
+        @bias[i] += alpha * covb
+        @covb[i] = 1.0 / ((1.0 / covb) + r_inv)
       end
       score * y < 0.0 ? 1.0 : 0.0
     end
