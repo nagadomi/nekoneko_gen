@@ -89,6 +89,12 @@ class #{@name}
   def self.predict(text)
     classify(fv(text))
   end
+  
+#{labels}
+  LABELS = #{@labels.inspect}
+  K = #{@classifier.k}
+  
+  private
   def self.fv(text)
     prev = nil
     BimyouSegmenter.segment(text).map do |word|
@@ -111,10 +117,6 @@ class #{@name}
   end
 #{@classifier.classify_method_code(:ruby)}
   
-#{labels}
-  LABELS = #{@labels.inspect}
-  K = #{@classifier.k}
-  private
   NGRAM_TARGET = Regexp.new('(^[ァ-ヾ]+$)|(^[a-zA-Z\\-_ａ-ｚＡ-Ｚ‐＿0-9０-９]+$)|' +
                          '(^[々〇ヵヶ' + [0x3400].pack('U') + '-' + [0x9FFF].pack('U') +
                          [0xF900].pack('U') + '-' + [0xFAFF].pack('U') +
