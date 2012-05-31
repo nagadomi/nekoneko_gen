@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require File.expand_path(File.join(File.dirname(__FILE__), 'arow'))
 require File.expand_path(File.join(File.dirname(__FILE__), 'pa'))
 
@@ -10,6 +11,8 @@ module NekonekoGen
         Arow.new(k, options)
       when :pa, :pa1, :pa2
         PA.new(k, options)
+      else
+        raise ArgumentError
       end
     end
   end

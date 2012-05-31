@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 require 'json'
 require File.expand_path(File.join(File.dirname(__FILE__), 'classifier'))
 
 module NekonekoGen
   class LinearClassifier < Classifier
-    attr_accessor :w, :k, :bias
+    attr_reader :w, :bias
     def dot(vec, w)
       dot = 0.0
       vec.each do |k, v|
