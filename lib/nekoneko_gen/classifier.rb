@@ -9,10 +9,13 @@ module NekonekoGen
       raise NotImplementedError
     end
     def update(vec, label)
-      raise NotImplementedError      
+      raise NotImplementedError
     end
     def features(i = -1)
-      raise NotImplementedError      
+      raise NotImplementedError
+    end
+    def default_iteration
+      raise NotImplementedError
     end
   end
 end

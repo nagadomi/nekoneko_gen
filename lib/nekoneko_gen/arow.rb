@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 require File.expand_path(File.join(File.dirname(__FILE__), 'linear_classifier'))
+
 module NekonekoGen
+  # Adaptive Regularization of Weight Vector
   class Arow < LinearClassifier
     R = 6.0
+    DEFAULT_ITERATION = 20
+    
     def initialize(k, options = {})
       @r = options[:c] || R
       @k = k
@@ -44,6 +48,9 @@ module NekonekoGen
         @covb[i] = 1.0 / ((1.0 / covb) + r_inv)
       end
       score * y < 0.0 ? 1.0 : 0.0
+    end
+    def default_iteration
+      DEFAULT_ITERATION
     end
   end
 end

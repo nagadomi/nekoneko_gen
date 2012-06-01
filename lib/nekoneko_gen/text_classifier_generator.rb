@@ -19,8 +19,8 @@ module NekonekoGen
       @labels = files.map {|file| "#{safe_name(file).upcase}"}
     end
     
-    def train(iteration = 20)
-      iteration ||= 20
+    def train(iteration = nil)
+      iteration ||= @classifier.default_iteration
       data = []
       @classifier.k.times do |i|
         t = Time.now
@@ -56,7 +56,7 @@ module NekonekoGen
         print sprintf(" %.6f, %.4fs\n", 1.0 - loss / c.to_f, Time.now - t)
       end
       if (@classifier.k > 2)
-        @classifier.w.each_with_index do |w, i|
+        @classifier.k.times do |i|
           puts "#{@labels[i]} : #{@classifier.features(i)} features"
         end
       else
@@ -72,6 +72,7 @@ module NekonekoGen
       else
         raise NotImplementedError
       end
+      @name
     end
     def generate_ruby_code
       labels = @labels.each_with_index.map{|v, i| "  #{v} = #{i}"}.join("\n")
