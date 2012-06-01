@@ -153,7 +153,6 @@ CODE
       <<CODE
   def self.classify(vec)
     input_y = []
-    output_y = []
     HIDDEN_UNITS.times do |i|
       input_y[i] = sigmoid(INPUT_BIAS[i] +
                            INPUT_W[i].values_at(*vec).compact.reduce(0.0, :+))
