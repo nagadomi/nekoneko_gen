@@ -5,13 +5,11 @@ require 'optparse'
 require 'fileutils'
 
 module NekonekoGen
-  DEFAULT_ITERATION = 20
-  
   def self.run(argv)
-    iteration = DEFAULT_ITERATION
+    iteration = nil
     rubyfile = nil
     quiet = false
-
+    
     $stdout.sync = true
     method = nil
     c = nil
@@ -20,20 +18,30 @@ module NekonekoGen
         rubyfile = File.join(File.dirname(v), File.basename(v, ".*") + ".rb")
         FileUtils.touch(rubyfile)
       end
-      o.on('-i N', "iteration (default: #{DEFAULT_ITERATION})") do |v|
+      o.on('-i N', "iteration (default: auto)") do |v|
         iteration = v.to_i.abs
       end
-      o.on('-m METHOD', "machine learning method (AROW|PA1|PA2)") do |v|
-        case v.downcase
-        when 'arow'
-          method = :arow
-        when 'pa1'
-          method = :pa1
-        when 'pa2'
-          method = :pa2
+      o.on('-m METHOD', "machine learning method [AROW|PA2|MLP] (default AROW)") do |v|
+        if (v)
+          case v.downcase
+          when 'arow'
+            method = :arow
+          when 'pa1'
+            method = :pa1
+          when 'pa2'
+            method = :pa2
+          when 'mlp'
+            method = :mlp
+          else
+            warn opt
+            return -1
+          end
+        else
+          warn opt
+          return -1
         end
       end
-      o.on('-p C', "parameter") do |v|
+      o.on('-p C', "parameter (default AROW::R=6.0, PA2::C=1.0, MLP::HIDDEN_UNIT=K*2)") do |v|
         c = v.to_f
       end
       o.on('-q', "quiet") do
@@ -41,7 +49,7 @@ module NekonekoGen
       end
     end
     opt.version = NekonekoGen::VERSION
-    opt.banner = "Usage: nekoneko_gen [options] -n classifier_name file1 file2 [files...]"
+    opt.banner = "Usage: nekoneko_gen [OPTIONS] -n NAME FILE1 FILE2 [FILES...]"
     files = opt.parse(argv)
     
     unless (rubyfile)

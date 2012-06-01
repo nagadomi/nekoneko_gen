@@ -6,118 +6,146 @@ class NekonekoGenTest < Test::Unit::TestCase
     @file0 = File.join(File.dirname(__FILE__), 'class0.txt')
     @file1 = File.join(File.dirname(__FILE__), 'class1.txt')
     @file2 = File.join(File.dirname(__FILE__), 'class2.txt')
-    @output_file2 = File.join(Dir.tmpdir, "nekoneko_test2_classifier.rb")
-    @output_file3 = File.join(Dir.tmpdir, "nekoneko_test3_classifier.rb")
+    @clean_files = []
   end
   def teardown
-    cleanup!
-  end
-  def cleanup!
-    begin
-      File.unlink(@output_file2)
-    rescue
-    end
-    begin
-      File.unlink(@output_file3)
-    rescue
+    @clean_files.each do |file|
+      if (File.exist?(file))
+        File.unlink(file)
+      end
     end
   end
   
-  def test_gen2
-    cleanup!
+  def test_mlp
+    gen2('mlp', {:method => :mlp})
+    gen3('mlp', {:method => :mlp})    
+  end
+  def test_pa2
+    gen2('pa2', {:method => :pa2})
+    gen3('pa2', {:method => :pa2})    
+  end
+  def test_arow
+    gen2('arow', {:method => :arow})
+    gen3('arow',{:method => :arow})
+  end
+
+  def clean!(a, b)
+    if (File.exist?(a))
+      File.unlink(a)
+    end
+    if (File.exist?(b))
+      File.unlink(b)
+    end
+  end    
+  
+  def gen2(prefix, options)
+    p "---- #{prefix} generate 2class"
+    output_file2 = File.join(Dir.tmpdir, "nekoneko_test2_#{prefix}_classifier.rb")
+    output_file3 = File.join(Dir.tmpdir, "nekoneko_test3_#{prefix}_classifier.rb")
     
-    gen = NekonekoGen::TextClassifierGenerator.new(@output_file2, [@file0, @file1])
-    #gen.quiet = true
-    gen.train(NekonekoGen::DEFAULT_ITERATION)
-    gen.generate
+    clean!(output_file2, output_file3)
+    @clean_files << output_file2
+    @clean_files << output_file3    
     
-    unless (File.exist?(@output_file2))
-      assert_equal "#{@output_file2} not found", nil
+    gen = NekonekoGen::TextClassifierGenerator.new(output_file2, [@file0, @file1], options)
+    gen.train
+    modname = gen.generate
+    
+    unless (File.exist?(output_file2))
+      assert_equal "#{output_file2} not found", nil
     end
     
     begin
-      load @output_file2
+      load output_file2
       
+      mod = Kernel.const_get(modname)
       ok = 0
       count = 0
       File.open(@file0) do |f|
         until f.eof?
-          if (NekonekoTest2Classifier.predict(f.readline) == NekonekoTest2Classifier::CLASS0)
+          if (mod.predict(f.readline) == mod::CLASS0)
             ok += 1
           end
           count += 1
         end
       end
-      puts "#{NekonekoTest2Classifier::LABELS[0]}: #{ok.to_f / count}"
+      puts "#{mod::LABELS[0]}: #{ok.to_f / count}"
+      assert ok.to_f / count > 0.9
+      
+      ok = 0
+      count = 0
+      File.open(@file1) do |f|
+        until f.eof?
+          if (mod.predict(f.readline) == mod::CLASS1)
+            ok += 1
+          end
+          count += 1
+        end
+      end
+      puts "#{mod::LABELS[1]}: #{ok.to_f / count}"      
+      assert ok.to_f / count > 0.9
+    end
+  end
+  
+  def gen3(prefix, options)
+    p "---- #{prefix} generate 3class"
+    output_file2 = File.join(Dir.tmpdir, "nekoneko_test2_#{prefix}_classifier.rb")
+    output_file3 = File.join(Dir.tmpdir, "nekoneko_test3_#{prefix}_classifier.rb")
+
+    clean!(output_file2, output_file3)
+    @clean_files << output_file2
+    @clean_files << output_file3    
+    
+    gen = NekonekoGen::TextClassifierGenerator.new(output_file3,
+                                                   [@file0, @file1, @file2], options)
+    gen.train
+    modname = gen.generate
+    
+    unless (File.exist?(output_file3))
+      assert_equal "#{output_file3} not found", nil
+    end
+    
+    begin
+      load output_file3
+
+      mod = Kernel.const_get(modname)
+      ok = 0
+      count = 0
+      File.open(@file0) do |f|
+        until f.eof?
+          if (mod.predict(f.readline) == mod::CLASS0)
+            ok += 1
+          end
+          count += 1
+        end
+      end
+      puts "#{mod::LABELS[0]}: #{ok.to_f / count}"
       assert ok.to_f / count > 0.9
 
       ok = 0
       count = 0
       File.open(@file1) do |f|
         until f.eof?
-          if (NekonekoTest2Classifier.predict(f.readline) == NekonekoTest2Classifier::CLASS1)
+          if (mod.predict(f.readline) == mod::CLASS1)
             ok += 1
           end
           count += 1
         end
       end
-      puts "#{NekonekoTest2Classifier::LABELS[1]}: #{ok.to_f / count}"      
-      assert ok.to_f / count > 0.9
-    end
-  end
-  
-  def test_gen3
-    cleanup!
-    
-    gen = NekonekoGen::TextClassifierGenerator.new(@output_file3, [@file0, @file1, @file2])
-    #gen.quiet = true
-    gen.train(NekonekoGen::DEFAULT_ITERATION)
-    gen.generate
-    
-    unless (File.exist?(@output_file3))
-      assert_equal "#{@output_file3} not found", nil
-    end
-    
-    begin
-      load @output_file3
-      
-      ok = 0
-      count = 0
-      File.open(@file0) do |f|
-        until f.eof?
-          if (NekonekoTest3Classifier.predict(f.readline) == NekonekoTest3Classifier::CLASS0)
-            ok += 1
-          end
-          count += 1
-        end
-      end
-      puts "#{NekonekoTest3Classifier::LABELS[0]}: #{ok.to_f / count}"            
-      assert ok.to_f / count > 0.9
-
-      ok = 0
-      count = 0
-      File.open(@file1) do |f|
-        until f.eof?
-          if (NekonekoTest3Classifier.predict(f.readline) == NekonekoTest3Classifier::CLASS1)
-            ok += 1
-          end
-          count += 1
-        end
-      end
-      puts "#{NekonekoTest3Classifier::LABELS[1]}: #{ok.to_f / count}"
+      puts "#{mod::LABELS[1]}: #{ok.to_f / count}"
       assert ok.to_f / count > 0.9
 
       ok = 0
       count = 0
       File.open(@file2) do |f|
         until f.eof?
-          if (NekonekoTest3Classifier.predict(f.readline) == NekonekoTest3Classifier::CLASS2)
+          if (mod.predict(f.readline) == mod::CLASS2)
             ok += 1
           end
           count += 1
         end
       end
-      puts "#{NekonekoTest3Classifier::LABELS[2]}: #{ok.to_f / count}"
+      puts "#{mod::LABELS[2]}: #{ok.to_f / count}"
       assert ok.to_f / count > 0.9
     end
   end

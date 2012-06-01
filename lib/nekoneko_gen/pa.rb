@@ -2,9 +2,11 @@
 require File.expand_path(File.join(File.dirname(__FILE__), 'linear_classifier'))
 
 module NekonekoGen
+  # Passive Agressive
   class PA < LinearClassifier
     C = 1.0
     NORM = 2.0 # norm + BIAS
+    DEFAULT_ITERATION = 20
     
     def initialize(k, options = {})
       @k = k
@@ -58,6 +60,9 @@ module NekonekoGen
         @bias[i] += alpha
       end
       y * score < 0.0 ? 1.0 : 0.0
+    end
+    def default_iteration
+      DEFAULT_ITERATION
     end
   end
 end
