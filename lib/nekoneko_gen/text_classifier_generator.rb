@@ -98,7 +98,9 @@ class #{@name}
   private
   def self.fv(text)
     prev = nil
-    BimyouSegmenter.segment(text).map do |word|
+    BimyouSegmenter.segment(text,
+                            :white_space => false,
+                            :symbol => false).map do |word|
       if (prev)
         if (NGRAM_TARGET =~ word)
           nword = [prev + word, word]
@@ -145,7 +147,9 @@ MODEL
     def fv(text)
       vec = Hash.new(0)
       prev = nil
-      words = BimyouSegmenter.segment(text, :white_space => true).map do |word|
+      words = BimyouSegmenter.segment(text,
+                                      :white_space => false,
+                                      :symbol => false).map do |word|
         if (prev)
           if (NGRAM_TARGET =~ word)
             nword = [prev + word, word]
@@ -208,7 +212,7 @@ MODEL
       end
     end
     def safe_name(filename)
-      File.basename(filename, ".*").gsub('-','_').gsub(/[^a-zA-Z_0-9]/, '')
+      File.basename(filename, ".*").gsub(/[\-\.]/,'_').gsub(/[^a-zA-Z_0-9]/, '')
     end
     def puts(s)
       unless (@quiet)
