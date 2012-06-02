@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
   gem.version       = NekonekoGen::VERSION
   
-  gem.add_dependency 'bimyou_segmenter'
+  gem.add_dependency 'bimyou_segmenter', '>= 1.2.0'
   gem.add_dependency 'json'
   gem.add_development_dependency 'test-unit'
 end
