@@ -39,7 +39,7 @@ module NekonekoGen
       end
     end
     def pa2(y, l)
-      y * (l / NORM + 0.5 / @c)
+      y * (l / (NORM + 0.5 / @c))
     end
     def pa1(y, l)
       y * [@c, (l / NORM)].min
