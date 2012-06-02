@@ -9,11 +9,13 @@ class NekonekoGenTest < Test::Unit::TestCase
     @clean_files = []
   end
   def teardown
+=begin    
     @clean_files.each do |file|
       if (File.exist?(file))
         File.unlink(file)
       end
     end
+=end
   end
   
   def test_mlp
@@ -28,7 +30,7 @@ class NekonekoGenTest < Test::Unit::TestCase
     gen2('arow', {:method => :arow})
     gen3('arow',{:method => :arow})
   end
-
+  
   def clean!(a, b)
     if (File.exist?(a))
       File.unlink(a)

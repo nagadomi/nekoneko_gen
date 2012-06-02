@@ -13,7 +13,7 @@ module NekonekoGen
     def default_hidden_unit
       @k
     end
-    def initialize(k, options)
+    def initialize(k, n, options)
       @k = k
       @output_units = @k == 2 ? 1 : @k
       @hidden_units = (options[:c] || default_hidden_unit).to_i
@@ -22,15 +22,18 @@ module NekonekoGen
       @input_bias = []
       @hidden_bias = []
       @hidden_units.times do |i|
-        @input[i] = Hash.new {|hash, key| hash[key] = default_value }
-        @input_bias[i] = default_value
+        input = @input[i] = []
+        n.times do |j|
+          input[j] = rand_value
+        end
+        @input_bias[i] = rand_value
       end
       @output_units.times do |i|
-        @hidden[i] = []
+        hidden = @hidden[i] = []
         @hidden_units.times do |j|
-          @hidden[i][j] = default_value
+          hidden[j] = rand_value
         end
-        @hidden_bias[i] = default_value
+        @hidden_bias[i] = rand_value
       end
     end
     def update(vec, label)
@@ -115,7 +118,7 @@ module NekonekoGen
     def sigmoid(a)
       1.0 / (1.0 + Math.exp(-a))
     end
-    def default_value
+    def rand_value
       (rand - 0.5)
     end
     def noise
@@ -124,22 +127,18 @@ module NekonekoGen
     def default_iteration
       DEFAULT_ITERATION
     end
-    def parameter_code(lang, index_converter = lambda{|i| i})
+    def parameter_code(lang = :ruby)
       lang ||= :ruby
       case lang
       when :ruby
       else
         raise NotImplementedError
       end
-      
-      wvec = @input.map {|w|
-        w.reduce({}) {|h, kv| h[index_converter.call(kv[0])] = kv[1]; h }
-      }
       <<CODE
   HIDDEN_UNITS = #{@hidden_units}
   INPUT_BIAS = #{@input_bias.inspect}
   HIDDEN_BIAS = #{@hidden_bias.inspect}
-  INPUT_W = JSON.load(#{wvec.to_json.inspect})
+  INPUT_W = JSON.load(#{@input.to_json.inspect})
   HIDDEN_W = #{@hidden.inspect}
 CODE
     end
@@ -151,11 +150,12 @@ CODE
         raise NotImplementedError
       end
       <<CODE
-  def self.classify(vec)
+  def self.classify(svec)
     input_y = []
     HIDDEN_UNITS.times do |i|
+      w = INPUT_W[i]
       input_y[i] = sigmoid(INPUT_BIAS[i] +
-                           INPUT_W[i].values_at(*vec).compact.reduce(0.0, :+))
+                           svec.map{|k,v| v * w[k]}.reduce(0.0, :+))
     end
     if (K == 2)
       HIDDEN_BIAS[0] +

@@ -4,10 +4,10 @@ require File.expand_path(File.join(File.dirname(__FILE__), 'linear_classifier'))
 module NekonekoGen
   # Adaptive Regularization of Weight Vector
   class Arow < LinearClassifier
-    R = 6.0
+    R = 10.0
     DEFAULT_ITERATION = 20
     
-    def initialize(k, options = {})
+    def initialize(k, n, options = {})
       @r = options[:c] || R
       @k = k
       @cov = []
@@ -15,14 +15,14 @@ module NekonekoGen
       @w = []
       @bias = []
       if (@k == 2)
-        @cov[0] = Hash.new(1.0)
-        @w[0] = Hash.new(0.0)
+        @cov[0] = Array.new(n, 1.0)
+        @w[0] = Array.new(n, 0.0)
         @covb[0] = 1.0
         @bias[0] = 0.0
       else
         k.times do |i|
-          @cov[i] = Hash.new(1.0)
-          @w[i] = Hash.new(0.0)
+          @cov[i] = Array.new(n, 1.0)
+          @w[i] = Array.new(n, 0.0)
           @covb[i] = 1.0
           @bias[i] = 0.0
         end
@@ -33,6 +33,7 @@ module NekonekoGen
       cov = @cov[i]
       covb = @covb[i]
       bias = @bias[i]
+
       y = label == i ? 1 : -1
       score = bias + dot(vec, w)
       alpha = 1.0 - y * score

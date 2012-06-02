@@ -2,7 +2,7 @@
 module NekonekoGen
   class Classifier
     attr_reader :k
-    def parameter_code(index_converter = nil)
+    def parameter_code
       raise NotImplementedError
     end
     def classify_method_code

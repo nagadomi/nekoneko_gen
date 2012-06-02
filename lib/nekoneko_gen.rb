@@ -41,7 +41,7 @@ module NekonekoGen
           return -1
         end
       end
-      o.on('-p C', "parameter (default AROW::R=6.0, PA2::C=1.0, MLP::HIDDEN_UNIT=K)") do |v|
+      o.on('-p C', "parameter (default AROW::R=10.0, PA2::C=1.0, MLP::HIDDEN_UNIT=K)") do |v|
         c = v.to_f
       end
       o.on('-q', "quiet") do

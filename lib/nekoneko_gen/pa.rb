@@ -8,17 +8,17 @@ module NekonekoGen
     NORM = 2.0 # norm + BIAS
     DEFAULT_ITERATION = 20
     
-    def initialize(k, options = {})
+    def initialize(k, n, options = {})
       @k = k
       @c = options[:c] || C
       @w = []
       @bias = []
       if (@k == 2)
-        @w[0] = Hash.new(0.0)
+        @w[0] = Array.new(n, 0.0)
         @bias[0] = 0.0
       else
         k.times do |i|
-          @w[i] = Hash.new(0.0)
+          @w[i] = Array.new(n, 0.0)
           @bias[i] = 0.0
         end
       end
@@ -50,6 +50,7 @@ module NekonekoGen
     def update_at(i, vec, label)
       y = label == i ? 1 : -1
       w = @w[i]
+      
       score = @bias[i] + dot(vec, w)
       l = 1.0 - score * y
       if (l > 0.0)

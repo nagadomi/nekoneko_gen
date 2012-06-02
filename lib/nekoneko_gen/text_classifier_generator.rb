@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+require 'json'
 require 'nkf'
 require 'bimyou_segmenter'
 
@@ -14,14 +15,16 @@ module NekonekoGen
       @files = files
       @word2id = {}
       @id2word = {}
-      @classifier = ClassifierFactory.create(files.size, options)
+      @classifier = nil
+      @k = files.size
       @name = safe_name(@filename).split("_").map(&:capitalize).join
       @labels = files.map {|file| "#{safe_name(file).upcase}"}
+      @idf = {}
     end
     def train(iteration = nil)
-      iteration ||= @classifier.default_iteration
       data = []
-      @classifier.k.times do |i|
+      word_count = Hash.new(0)
+      @k.times do |i|
         t = Time.now
         data[i] = []
         print "loading #{@files[i]}... "
@@ -39,8 +42,36 @@ module NekonekoGen
         end
         puts sprintf("%.4fs", Time.now - t)
       end
+      data_min = data.map{|v| v.size}.min
+      data.each do |cd|
+        w = data_min / cd.size.to_f
+        cd.each do |vec|
+          vec.keys.each do |k|
+            word_count[k] += w
+          end
+        end
+      end
+      document_count = data_min * data.size
+      @idf = Array.new(0, 0)
+      word_count.each{|k, freq|
+        @idf[k] = Math.log2(document_count / freq) + 1.0
+      }
+      data.each do |cdata|
+        cdata.each do |vec|
+          if (vec.size > 1)
+            r = 1.0 / Math.log2(vec.size + 1.0)
+          else
+            r = 1.0
+          end
+          vec.each do |k, freq|
+            vec[k] = Math.log2(freq + 1.0) * r * @idf[k]
+          end
+          normalize(vec)
+        end
+      end
       
-      samples = data.map{|v| v.size}.min
+      @classifier = ClassifierFactory.create(@k, @word2id.size, @options)
+      iteration ||= @classifier.default_iteration
       iteration.times do |step|
         loss = 0.0
         c = 0
@@ -48,13 +79,14 @@ module NekonekoGen
         print sprintf("step %3d...", step)
         
         @classifier.k.times.map do |i|
-          sampling(data[i], samples).map {|vec| [vec, i] }
+          sampling(data[i], data_min).map {|vec| [vec, i] }
         end.flatten(1).shuffle!.each do |v|
           loss += @classifier.update(v[0], v[1])
           c += 1
         end
         print sprintf(" %.6f, %.4fs\n", 1.0 - loss / c.to_f, Time.now - t)
       end
+      
       if (@classifier.k > 2)
         @classifier.k.times do |i|
           puts "#{@labels[i]} : #{@classifier.features(i)} features"
@@ -97,9 +129,9 @@ class #{@name}
   private
   def self.fv(text)
     prev = nil
-    BimyouSegmenter.segment(text,
-                            :white_space => true,
-                            :symbol => true).map do |word|
+    svec = BimyouSegmenter.segment(text,
+                                   :white_space => true,
+                                   :symbol => true).map do |word|
       if (prev)
         if (NGRAM_TARGET =~ word)
           nword = [prev + word, word]
@@ -115,14 +147,43 @@ class #{@name}
         end
         word
       end
-    end.flatten
+    end.flatten.map{|word| WORD_INDEX[word]}.compact.reduce(Hash.new(0)) {|h,k| h[k] += 1; h }
+    unless (svec.empty?)
+      if (svec.size > 1)
+        r = 1.0 / Math.log2(svec.size)
+      else
+        r = 1.0
+      end
+      svec.each do |k, freq|
+        if (idf = IDF[k])
+          svec[k] = Math.log2(freq + 1.0) * r * idf
+        else
+          svec[k] = 0.0
+        end
+      end
+      normalize(svec)
+    else
+      svec
+    end
+  end
+  def self.normalize(svec)
+    norm = Math.sqrt(svec.values.map{|v| v * v }.reduce(0.0, :+))
+    if (norm > 0.0)
+      s = 1.0 / norm
+      svec.each do |k, v|
+        svec[k] = v * s
+      end
+    end
+    svec
   end
 #{@classifier.classify_method_code(:ruby)}
   NGRAM_TARGET = Regexp.new('(^[ァ-ヾ]+$)|(^[a-zA-Z\\-_ａ-ｚＡ-Ｚ‐＿0-9０-９]+$)|' +
                          '(^[々〇ヵヶ' + [0x3400].pack('U') + '-' + [0x9FFF].pack('U') +
                          [0xF900].pack('U') + '-' + [0xFAFF].pack('U') +
                             [0x20000].pack('U') + '-' + [0x2FFFF].pack('U') + ']+$)')
-#{@classifier.parameter_code(:ruby, lambda{|id| id2word(id) })}
+  IDF = JSON.load(#{@idf.to_json.inspect})
+  WORD_INDEX = JSON.load(#{@word2id.to_json.inspect})
+#{@classifier.parameter_code(:ruby)}
 end
 MODEL
       end
