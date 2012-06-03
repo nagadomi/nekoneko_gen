@@ -54,17 +54,17 @@ module NekonekoGen
       document_count = data_min * data.size
       @idf = Array.new(0, 0)
       word_count.each{|k, freq|
-        @idf[k] = Math.log2(document_count / freq) + 1.0
+        @idf[k] = Math.log(document_count / freq) * MATH_LOG2_INV + 1.0
       }
       data.each do |cdata|
         cdata.each do |vec|
           if (vec.size > 1)
-            r = 1.0 / Math.log2(vec.size + 1.0)
+            r = 1.0 / Math.log(vec.size + 1.0) * MATH_LOG2_INV
           else
             r = 1.0
           end
           vec.each do |k, freq|
-            vec[k] = Math.log2(freq + 1.0) * r * @idf[k]
+            vec[k] = Math.log(freq + 1.0) * MATH_LOG2_INV * r * @idf[k]
           end
           normalize(vec)
         end
@@ -127,6 +127,7 @@ class #{@name}
   LABELS = #{@labels.inspect}
   K = #{@classifier.k}
   private
+  MATH_LOG2_INV = 1.0 / Math.log(2.0)
   def self.fv(text)
     prev = nil
     svec = BimyouSegmenter.segment(text,
@@ -150,13 +151,13 @@ class #{@name}
     end.flatten.map{|word| WORD_INDEX[word]}.compact.reduce(Hash.new(0)) {|h,k| h[k] += 1; h }
     unless (svec.empty?)
       if (svec.size > 1)
-        r = 1.0 / Math.log2(svec.size)
+        r = 1.0 / Math.log(svec.size) * MATH_LOG2_INV
       else
         r = 1.0
       end
       svec.each do |k, freq|
         if (idf = IDF[k])
-          svec[k] = Math.log2(freq + 1.0) * r * idf
+          svec[k] = Math.log(freq + 1.0) * MATH_LOG2_INV * r * idf
         else
           svec[k] = 0.0
         end
@@ -295,6 +296,7 @@ MODEL
         Kernel.print s
       end
     end
+    MATH_LOG2_INV = 1.0 / Math.log(2.0)
     SYMBOL = Regexp.new('^[^々〇' + [0x3400].pack('U') + '-' + [0x9FFF].pack('U') +
                         [0xF900].pack('U') + '-' + [0xFAFF].pack('U') +
                         [0x20000].pack('U') + '-' + [0x2FFFF].pack('U') +
