@@ -58,8 +58,8 @@ module NekonekoGen
       }
       data.each do |cdata|
         cdata.each do |vec|
-          if (vec.size > 1)
-            r = 1.0 / Math.log(vec.size + 1.0) * MATH_LOG2_INV
+          if (vec.size >= 2)
+            r = 1.0 / (Math.log(vec.size) * MATH_LOG2_INV)
           else
             r = 1.0
           end
@@ -150,8 +150,8 @@ class #{@name}
       end
     end.flatten.map{|word| WORD_INDEX[word]}.compact.reduce(Hash.new(0)) {|h,k| h[k] += 1; h }
     unless (svec.empty?)
-      if (svec.size > 1)
-        r = 1.0 / Math.log(svec.size) * MATH_LOG2_INV
+      if (svec.size >= 2)
+        r = 1.0 / (Math.log(svec.size) * MATH_LOG2_INV)
       else
         r = 1.0
       end
